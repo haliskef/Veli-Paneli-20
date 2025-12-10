@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Veli Paneli</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://unpkg.com/tabletop@1.6.4/src/tabletop.min.js"></script>
+  <style>
+    body {{ font-family: Arial, sans-serif; margin: 30px; background: #f4fdf9; }}
+    h2 {{ color: #2d4d7a; }}
+    .section {{ margin-top: 20px; padding: 15px; background: #fff; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.05); }}
+    .box {{ display: inline-block; margin-right: 15px; padding: 10px 15px; border-radius: 8px; background: #e1f5fe; font-size: 18px; font-weight: bold; }}
+    canvas {{ max-width: 100%; height: auto; }}
+  </style>
+</head>
+<body>
+  <h2>Değerli Velimiz</h2>
+  <h3>Hoş Geldiniz</h3>
+  <h4>Öğrenci ID: 1038</h4>
+
+  <div class="section" id="deneme">
+    <h3>Deneme Sonuçları</h3>
+    <div id="deneme-boxes"></div>
+    <canvas id="denemeChart"></canvas>
+    <p id="deneme-yorum">Yorum yükleniyor...</p>
+  </div>
+
+  <div class="section" id="soru">
+    <h3>Soru Takibi</h3>
+    <div id="soruBox">Yükleniyor...</div>
+  </div>
+
+  <div class="section" id="kaynak">
+    <h3>Kaynak Takibi</h3>
+    <div id="kaynakBox">Yükleniyor...</div>
+  </div>
+
+  <div class="section" id="deger">
+    <h3>Haftalık Değerlendirme</h3>
+    <div id="degerBox">Yükleniyor...</div>
+  </div>
+
+  <script>
+    const sheetUrl = "https://docs.google.com/spreadsheets/d/14YSRB8zkUBr-bbqqBOMvnv5dz3J3r64Z/pubhtml";
+    const studentId = "1038";
+
+    Tabletop.init({{
+      key: sheetUrl,
+      callback: function(data, tabletop) {{
+        const denemeData = tabletop.sheets("Deneme").all().filter(row => row.ID === studentId);
+        const soruData = tabletop.sheets("Soru").all().find(row => row.ID === studentId);
+        const kaynakData = tabletop.sheets("Kaynak").all().find(row => row.ID === studentId);
+        const degerData = tabletop.sheets("Deger").all().find(row => row.ID === studentId);
+
+        // Deneme Analizi
+        if (denemeData.length >= 3) {{
+          const sorted = denemeData.sort((a,b) => new Date(b.Tarih) - new Date(a.Tarih));
+          const son3 = sorted.slice(0, 3);
+          const nets = son3.map(d => parseFloat(d["Toplam Net"]));
+          const labels = son3.map(d => d.Tarih);
+          const max3 = sorted.slice(0, 3).map(d => parseFloat(d["Toplam Net"])).sort((a,b) => b-a).slice(0,3);
+          const min = Math.min(...sorted.map(d => parseFloat(d["Toplam Net"])));
+          const ort = (max3.reduce((a,b) => a+b,0)/3).toFixed(1);
+
+          document.getElementById("deneme-boxes").innerHTML = `
+            <div class="box">En İyi 3 Ortalama: ${ort}</div>
+            <div class="box">En Düşük Net: ${min}</div>
+          `;
+
+          new Chart(document.getElementById('denemeChart'), {{
+            type: 'line',
+            data: {{ labels, datasets: [{{ label: 'Son 3 Net', data: nets, fill: false, borderColor: 'green' }}] }},
+            options: {{ responsive: true, plugins: {{ legend: {{ display: false }} }} }}
+          }});
+
+          let yorum = "";
+          if (nets[2] < nets[0]) {{
+            yorum = "Son deneme netinde artış gözlemlenmektedir.";
+          }} else if (nets[2] > nets[0]) {{
+            yorum = "Son deneme netinde düşüş gözlemlenmektedir.";
+          }} else {{
+            yorum = "Son deneme neti sabit kalmaktadır.";
+          }}
+          document.getElementById("deneme-yorum").innerText = yorum;
+        }}
+
+        // Soru Takibi
+        if (soruData) {{
+          const toplam = parseInt(soruData["Toplam Soru"]);
+          const onceki = parseInt(soruData["Önceki Hafta"]);
+          const fark = toplam - onceki;
+          let metin = `Bu hafta toplam ${toplam} soru çözüldü. `;
+          if (fark > 0) metin += "Çözüm sayısında artış gözlemlenmektedir.";
+          else if (fark < 0) metin += "Çözüm sayısında azalma gözlemlenmektedir.";
+          else metin += "Çözüm sayısı sabit kalmaktadır.";
+          document.getElementById("soruBox").innerText = metin;
+        }}
+
+        // Kaynak Takibi
+        if (kaynakData) {{
+          const cozum = parseInt(kaynakData["Çözülen"]);
+          const toplam = parseInt(kaynakData["Toplam"]);
+          const oran = toplam > 0 ? Math.round((cozum/toplam)*100) : 0;
+          const yapildi = kaynakData["Ödev"] === "EVET" ? "Bu hafta ödev yapılmıştır." : "Bu hafta ödev yapılmamıştır.";
+          document.getElementById("kaynakBox").innerText = `Toplam ${toplam} konudan ${cozum} tanesi çözülmüş (${oran}%). ${yapildi}`;
+        }}
+
+        // Değerlendirme
+        if (degerData) {{
+          let html = "";
+          if (degerData["Davranış"]) html += `<p><strong>Davranış:</strong> ${degerData["Davranış"]}</p>`;
+          if (degerData["Ders Durumu"]) html += `<p><strong>Ders Durumu:</strong> ${degerData["Ders Durumu"]}</p>`;
+          if (degerData["Genel"]) html += `<p><strong>Genel Değerlendirme:</strong> ${degerData["Genel"]}</p>`;
+          document.getElementById("degerBox").innerHTML = html;
+        }}
+      }},
+      simpleSheet: false
+    }});
+  </script>
+</body>
+</html>

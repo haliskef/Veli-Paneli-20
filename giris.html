@@ -1,0 +1,52 @@
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Veli Girişi</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #e0f7ec;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+    input, button {
+      padding: 10px;
+      font-size: 18px;
+      margin: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+    .container {
+      text-align: center;
+      background: white;
+      padding: 40px;
+      border-radius: 16px;
+      box-shadow: 0 0 12px rgba(0,0,0,0.1);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Veli Paneline Giriş</h2>
+    <p>Lütfen Öğrenci ID'nizi girin:</p>
+    <input type="text" id="studentId" placeholder="Örn: 1001">
+    <br>
+    <button onclick="redirect()">Giriş Yap</button>
+  </div>
+  <script>
+    function redirect() {
+      const id = document.getElementById("studentId").value.trim();
+      if (id) {
+        window.location.href = id + "/index.html";
+      } else {
+        alert("Lütfen geçerli bir ID giriniz.");
+      }
+    }
+  </script>
+</body>
+</html>
